@@ -3,27 +3,46 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Démo Agent IA Électricien - Mobile Fix</title>
+  <title>Démo Agent IA Électricien - Vocal</title>
   <style>
-    * { box-sizing: border-box; }
     body {
       font-family: Arial, sans-serif;
       background: #f4f6f8;
       margin: 0;
-      padding: 30px;
+      padding: 18px;
     }
+
     .container {
       max-width: 760px;
       margin: auto;
       background: white;
       border-radius: 16px;
-      padding: 24px;
+      padding: 20px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.08);
     }
-    h1 { margin-top: 0; font-size: 24px; }
-    .subtitle { color: #666; font-size: 14px; margin-bottom: 16px; }
-    .phone-box { display: flex; gap: 10px; margin-bottom: 14px; }
-    .phone-box input { flex: 1; }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+    }
+
+    .subtitle {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+
+    .phone-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .phone-box input {
+      flex: 1;
+      min-width: 0;
+    }
+
     .chat {
       border: 1px solid #ddd;
       border-radius: 12px;
@@ -32,48 +51,103 @@
       overflow-y: auto;
       background: #fafafa;
       margin-bottom: 16px;
-      -webkit-overflow-scrolling: touch;
     }
+
     .message {
       margin-bottom: 12px;
       padding: 10px 12px;
       border-radius: 12px;
-      max-width: 80%;
+      max-width: 82%;
       line-height: 1.4;
       white-space: pre-wrap;
-      word-break: break-word;
+      word-wrap: break-word;
     }
-    .user { background: #dbeafe; margin-left: auto; text-align: right; }
-    .assistant { background: #e5e7eb; margin-right: auto; }
-    .system { background: #fff7ed; color: #9a3412; margin: 0 auto 12px auto; text-align: center; font-size: 13px; }
-    .controls { display: flex; gap: 10px; margin-bottom: 10px; }
-    .voice-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; color: #374151; }
-    .voice-controls label { display: flex; align-items: center; gap: 6px; }
+
+    .user {
+      background: #dbeafe;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .assistant {
+      background: #e5e7eb;
+      margin-right: auto;
+    }
+
+    .system {
+      background: #fff7ed;
+      color: #9a3412;
+      margin: 0 auto 12px auto;
+      text-align: center;
+      font-size: 13px;
+      max-width: 95%;
+    }
+
+    .success {
+      background: #ecfdf5;
+      color: #047857;
+      margin: 0 auto 12px auto;
+      text-align: center;
+      font-size: 13px;
+      max-width: 95%;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .voice-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
     input {
       padding: 12px;
       border-radius: 8px;
       border: 1px solid #ccc;
       font-size: 16px;
-      min-height: 46px;
+      box-sizing: border-box;
     }
-    #message { flex: 1; }
+
+    #message {
+      flex: 1;
+      min-width: 0;
+    }
+
     button {
-      padding: 12px 18px;
+      padding: 12px 16px;
       border: none;
       border-radius: 8px;
       background: #111827;
       color: white;
-      font-size: 16px;
+      font-size: 15px;
       cursor: pointer;
-      min-height: 46px;
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
     }
-    button.secondary { background: #6b7280; }
-    button.micro { background: #2563eb; }
-    button.micro.recording { background: #dc2626; }
-    button.stop { background: #b91c1c; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    button.secondary {
+      background: #6b7280;
+    }
+
+    button.voice {
+      background: #2563eb;
+    }
+
+    button.stop {
+      background: #991b1b;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     .debug {
       margin-top: 14px;
       font-size: 12px;
@@ -84,374 +158,387 @@
       padding: 10px;
       display: none;
       white-space: pre-wrap;
-      max-height: 180px;
-      overflow: auto;
+      overflow-x: auto;
     }
-    .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.4; }
-    .status { font-size: 12px; color: #047857; margin: 8px 0 10px 0; }
-    @media (max-width: 600px) {
-      body { padding: 12px; }
-      .container { padding: 16px; border-radius: 12px; }
-      .phone-box, .controls, .voice-controls { flex-direction: column; align-items: stretch; }
-      .phone-box input, #message, button { width: 100%; }
-      .chat { height: 52vh; }
-      .message { max-width: 92%; }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 10px;
+      }
+
+      .container {
+        padding: 14px;
+      }
+
+      h1 {
+        font-size: 20px;
+      }
+
+      .phone-box,
+      .controls {
+        flex-direction: column;
+      }
+
+      button,
+      input {
+        width: 100%;
+      }
+
+      .chat {
+        height: 390px;
+      }
+
+      .voice-controls {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .voice-controls label {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .voice-controls input[type="checkbox"] {
+        width: auto;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Démo Agent IA Électricien</h1>
-    <div class="subtitle">Simulation d’une conversation client sans WhatsApp ni Twilio, avec texte et vocal navigateur.</div>
+    <div class="subtitle">
+      Simulation d’une conversation client avec texte, micro et réponse vocale.
+    </div>
 
     <div class="phone-box">
-      <input id="telephone" value="+33600000000" inputmode="tel" />
-      <button id="resetBtn" class="secondary" type="button">Nouvelle démo</button>
+      <input id="telephone" value="+33600000000" />
+      <button id="resetBtn" class="secondary">Nouvelle démo</button>
     </div>
-
-    <div id="status" class="status">Chargement de la page...</div>
 
     <div id="chat" class="chat">
-      <div class="message system">Écrivez un message ou cliquez sur 🎙️ Parler pour démarrer la démonstration.</div>
-    </div>
-
-    <div class="controls">
-      <input id="message" placeholder="Écrire un message client..." autocomplete="off" />
-      <button id="micBtn" class="micro" type="button">🎙️ Parler</button>
-      <button id="sendBtn" type="button">Envoyer</button>
+      <div class="message system">
+        Chargement de la page...
+      </div>
     </div>
 
     <div class="voice-controls">
+      <button id="unlockVoiceBtn" class="voice">🔊 Activer la voix</button>
+      <button id="micBtn" class="voice">🎙️ Parler</button>
+      <button id="stopVoiceBtn" class="stop">Stop voix</button>
       <label>
         <input id="voiceEnabled" type="checkbox" checked />
         Lire la réponse à voix haute
       </label>
-      <button id="stopVoiceBtn" class="stop" type="button">Stop voix</button>
     </div>
 
-    <div class="hint">
-      Mobile : ouvrez cette page dans Chrome ou Safari directement. Évitez l’aperçu fichier, WhatsApp, Messenger ou Gmail intégré. Si besoin, publiez la page en HTTPS.
+    <div class="controls">
+      <input id="message" placeholder="Écrire un message client..." />
+      <button id="sendBtn">Envoyer</button>
     </div>
 
     <div id="debug" class="debug"></div>
   </div>
 
   <script>
-    (function () {
-      'use strict';
+    const WEBHOOK_URL = "https://othmanebelkaria.app.n8n.cloud/webhook/demo-chat";
 
-      var WEBHOOK_URL = "https://othmanebelkaria.app.n8n.cloud/webhook/demo-chat";
-      var DEFAULT_VOICE_NAME = "Microsoft Denise Online (Natural) - French (France)";
+    let recognition = null;
+    let isListening = false;
+    let availableVoices = [];
+    let voiceUnlocked = false;
 
-      var recognition = null;
-      var isRecording = false;
-      var availableVoices = [];
-      var lastVoiceText = "";
-      var autoSendAfterVoice = false;
+    function showDebug(text) {
+      const debug = document.getElementById("debug");
+      debug.style.display = "block";
+      debug.textContent = text;
+    }
 
-      var el = {};
+    function addMessage(text, type) {
+      const chat = document.getElementById("chat");
+      const div = document.createElement("div");
+      div.className = "message " + type;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
 
-      function $(id) {
-        return document.getElementById(id);
+    function resetChat() {
+      document.getElementById("chat").innerHTML = `
+        <div class="message system">
+          Nouvelle simulation démarrée. Changez le numéro si vous voulez repartir d’une conversation vierge.
+        </div>
+      `;
+      document.getElementById("debug").style.display = "none";
+      document.getElementById("debug").textContent = "";
+      stopVoice();
+    }
+
+    function normalizePhone(value) {
+      return value.replace("whatsapp:", "").trim();
+    }
+
+    function loadVoices() {
+      if (!("speechSynthesis" in window)) return;
+
+      availableVoices = window.speechSynthesis.getVoices();
+
+      // Chrome mobile charge parfois les voix avec retard.
+      if (!availableVoices.length) {
+        setTimeout(() => {
+          availableVoices = window.speechSynthesis.getVoices();
+        }, 500);
       }
+    }
 
-      function setStatus(text, isError) {
-        if (!el.status) return;
-        el.status.textContent = text;
-        el.status.style.color = isError ? "#b91c1c" : "#047857";
-      }
-
-      function showDebug(obj) {
-        if (!el.debug) return;
-        el.debug.style.display = "block";
-        if (typeof obj === "string") {
-          el.debug.textContent = obj;
-        } else {
-          el.debug.textContent = JSON.stringify(obj, null, 2);
-        }
-      }
-
-      function addMessage(text, type) {
-        var div = document.createElement("div");
-        div.className = "message " + type;
-        div.textContent = text;
-        el.chat.appendChild(div);
-        el.chat.scrollTop = el.chat.scrollHeight;
-      }
-
-      function normalizePhone(phone) {
-        return String(phone || "").replace("whatsapp:", "").trim();
-      }
-
-      function resetChat() {
-        stopSpeaking();
-        stopVoiceRecognition();
-        el.chat.innerHTML = '<div class="message system">Nouvelle simulation démarrée. Changez le numéro si vous voulez repartir d’une conversation vierge.</div>';
-        el.debug.style.display = "none";
-        el.debug.textContent = "";
-        el.message.value = "";
-        setStatus("Page prête.", false);
-      }
-
-      async function sendMessage() {
-        var text = el.message.value.trim();
-        var telephone = normalizePhone(el.telephone.value);
-
-        if (!text) {
-          setStatus("Écrivez un message avant d’envoyer.", true);
-          return;
-        }
-
-        stopSpeaking();
-        addMessage(text, "user");
-        el.message.value = "";
-        el.sendBtn.disabled = true;
-        el.micBtn.disabled = true;
-        el.sendBtn.textContent = "Envoi...";
-        setStatus("Envoi du message vers n8n...", false);
-
-        try {
-          var response = await fetch(WEBHOOK_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ telephone: telephone, text: text })
-          });
-
-          var responseText = await response.text();
-          var data = {};
-
-          try {
-            data = JSON.parse(responseText);
-          } catch (jsonError) {
-            throw new Error("Réponse n8n non JSON : " + responseText);
-          }
-
-          var reply = data.reply || "Aucune réponse reçue.";
-          addMessage(reply, "assistant");
-          speakText(reply);
-          showDebug(data);
-          setStatus("Réponse reçue.", false);
-        } catch (error) {
-          addMessage("Erreur : impossible de contacter l’automatisation.", "assistant");
-          setStatus("Erreur d’envoi. Voir debug.", true);
-          showDebug(String(error && error.message ? error.message : error));
-          console.error(error);
-        } finally {
-          el.sendBtn.disabled = false;
-          el.micBtn.disabled = false;
-          el.sendBtn.textContent = "Envoyer";
-        }
-      }
-
-      function initVoiceRecognition() {
-        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-
-        if (!SpeechRecognition) {
-          addMessage("Reconnaissance vocale non supportée par ce navigateur. Sur iPhone, Safari ne supporte pas toujours cette API. Utilisez le clavier vocal du téléphone ou Chrome Android.", "system");
-          setStatus("Reconnaissance vocale non supportée ici.", true);
-          return null;
-        }
-
-        var rec = new SpeechRecognition();
-        rec.lang = "fr-FR";
-        rec.continuous = false;
-        rec.interimResults = true;
-        rec.maxAlternatives = 1;
-
-        rec.onstart = function () {
-          isRecording = true;
-          autoSendAfterVoice = true;
-          lastVoiceText = "";
-          el.message.value = "";
-          el.micBtn.textContent = "⏺️ Écoute...";
-          el.micBtn.classList.add("recording");
-          setStatus("Micro activé, parlez maintenant...", false);
-        };
-
-        rec.onresult = function (event) {
-          var transcript = "";
-          for (var i = 0; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript + " ";
-          }
-          transcript = transcript.trim();
-          if (transcript) {
-            lastVoiceText = transcript;
-            el.message.value = transcript;
-          }
-        };
-
-        rec.onerror = function (event) {
-          var message = "Erreur micro : " + event.error;
-          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
-            message = "Micro refusé ou bloqué. Autorisez le micro dans les réglages du navigateur.";
-          } else if (event.error === "no-speech") {
-            message = "Aucune voix détectée. Réessayez en parlant plus près du micro.";
-          } else if (event.error === "audio-capture") {
-            message = "Aucun micro détecté. Vérifiez votre micro ou votre casque.";
-          } else if (event.error === "network") {
-            message = "Erreur réseau pendant la reconnaissance vocale. Testez avec une page HTTPS.";
-          }
-
-          autoSendAfterVoice = false;
-          addMessage(message, "system");
-          setStatus(message, true);
-          showDebug(event.error || event);
-        };
-
-        rec.onend = function () {
-          isRecording = false;
-          el.micBtn.textContent = "🎙️ Parler";
-          el.micBtn.classList.remove("recording");
-
-          setTimeout(function () {
-            var text = (el.message.value.trim() || lastVoiceText.trim());
-            if (text) el.message.value = text;
-
-            if (autoSendAfterVoice && text) {
-              autoSendAfterVoice = false;
-              sendMessage();
-            } else if (autoSendAfterVoice && !text) {
-              autoSendAfterVoice = false;
-              addMessage("Je n’ai pas récupéré de texte vocal. Réessayez ou écrivez le message manuellement.", "system");
-              setStatus("Aucun texte vocal récupéré.", true);
-            }
-          }, 700);
-        };
-
-        return rec;
-      }
-
-      function toggleVoiceRecognition() {
-        if (isRecording) {
-          stopVoiceRecognition();
-          return;
-        }
-
-        stopSpeaking();
-        recognition = initVoiceRecognition();
-        if (!recognition) return;
-
-        try {
-          recognition.start();
-        } catch (error) {
-          addMessage("Impossible de démarrer le micro. Réessayez dans quelques secondes.", "system");
-          setStatus("Impossible de démarrer le micro.", true);
-          showDebug(String(error && error.message ? error.message : error));
-          console.error(error);
-        }
-      }
-
-      function stopVoiceRecognition() {
-        autoSendAfterVoice = false;
-        if (recognition && isRecording) {
-          try { recognition.stop(); } catch (error) { console.error(error); }
-        }
-        isRecording = false;
-        if (el.micBtn) {
-          el.micBtn.textContent = "🎙️ Parler";
-          el.micBtn.classList.remove("recording");
-        }
-      }
-
-      function loadVoices() {
-        if (!("speechSynthesis" in window)) return;
+    function getPreferredFrenchVoice() {
+      if (!availableVoices.length && "speechSynthesis" in window) {
         availableVoices = window.speechSynthesis.getVoices();
       }
 
-      function getDefaultVoice() {
-        if (!availableVoices || availableVoices.length === 0) loadVoices();
+      const lower = voice => `${voice.name} ${voice.lang}`.toLowerCase();
 
-        var selectedVoice = null;
-        for (var i = 0; i < availableVoices.length; i++) {
-          if (availableVoices[i].name === DEFAULT_VOICE_NAME) selectedVoice = availableVoices[i];
-        }
+      return (
+        availableVoices.find(v => lower(v).includes("microsoft denise online") && lower(v).includes("fr")) ||
+        availableVoices.find(v => lower(v).includes("denise") && lower(v).includes("fr")) ||
+        availableVoices.find(v => lower(v).includes("natural") && lower(v).includes("fr")) ||
+        availableVoices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr-fr")) ||
+        availableVoices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr")) ||
+        null
+      );
+    }
 
-        if (!selectedVoice) {
-          for (var j = 0; j < availableVoices.length; j++) {
-            var v = availableVoices[j];
-            if (v.name && v.name.toLowerCase().indexOf("denise") !== -1 && v.lang && v.lang.toLowerCase().indexOf("fr") === 0) {
-              selectedVoice = v;
-              break;
-            }
-          }
-        }
-
-        if (!selectedVoice) {
-          for (var k = 0; k < availableVoices.length; k++) {
-            var vf = availableVoices[k];
-            if (vf.lang && vf.lang.toLowerCase().indexOf("fr") === 0) {
-              selectedVoice = vf;
-              break;
-            }
-          }
-        }
-
-        return selectedVoice;
+    function unlockVoice() {
+      if (!("speechSynthesis" in window)) {
+        addMessage("La lecture vocale n’est pas supportée par ce navigateur.", "system");
+        return;
       }
 
-      function speakText(text) {
-        if (!el.voiceEnabled || !el.voiceEnabled.checked) return;
-        if (!("speechSynthesis" in window)) return;
+      loadVoices();
+      window.speechSynthesis.cancel();
 
-        stopSpeaking();
-        var utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = "fr-FR";
-        utterance.rate = 1;
-        utterance.pitch = 1;
-        utterance.volume = 1;
+      // Sur mobile, la synthèse vocale doit être déclenchée une première fois par un clic utilisateur.
+      const utterance = new SpeechSynthesisUtterance("Voix activée.");
+      utterance.lang = "fr-FR";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
 
-        var selectedVoice = getDefaultVoice();
-        if (selectedVoice) {
-          utterance.voice = selectedVoice;
-          utterance.lang = selectedVoice.lang || "fr-FR";
-        }
+      const preferredVoice = getPreferredFrenchVoice();
+      if (preferredVoice) utterance.voice = preferredVoice;
 
+      utterance.onstart = () => {
+        voiceUnlocked = true;
+        addMessage("Voix activée. Les prochaines réponses pourront être lues à voix haute.", "success");
+      };
+
+      utterance.onerror = (event) => {
+        showDebug("Erreur activation voix : " + (event.error || "inconnue"));
+        addMessage("La voix n’a pas pu être activée. Réessayez après avoir touché l’écran.", "system");
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakText(text) {
+      const voiceEnabled = document.getElementById("voiceEnabled");
+
+      if (!voiceEnabled || !voiceEnabled.checked) return;
+      if (!text) return;
+
+      if (!("speechSynthesis" in window)) {
+        addMessage("Lecture vocale non supportée par ce navigateur.", "system");
+        return;
+      }
+
+      // Important mobile : sans activation manuelle, certains navigateurs bloquent speechSynthesis.
+      if (!voiceUnlocked) {
+        addMessage("Touchez d’abord “🔊 Activer la voix” pour autoriser la lecture vocale sur mobile.", "system");
+        return;
+      }
+
+      loadVoices();
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "fr-FR";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.volume = 1;
+
+      const preferredVoice = getPreferredFrenchVoice();
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      utterance.onerror = (event) => {
+        showDebug("Erreur lecture vocale : " + (event.error || "inconnue"));
+      };
+
+      // Petit délai pour éviter certains blocages après fetch sur mobile.
+      setTimeout(() => {
         window.speechSynthesis.speak(utterance);
+      }, 200);
+    }
+
+    function stopVoice() {
+      if ("speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
+    }
+
+    async function sendMessage(forcedText = null) {
+      const input = document.getElementById("message");
+      const phoneInput = document.getElementById("telephone");
+      const button = document.getElementById("sendBtn");
+
+      const text = (forcedText !== null ? forcedText : input.value).trim();
+      const telephone = normalizePhone(phoneInput.value);
+
+      if (!text) {
+        addMessage("Message vide, rien à envoyer.", "system");
+        return;
       }
 
-      function stopSpeaking() {
-        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-      }
+      addMessage(text, "user");
 
-      function bindEvents() {
-        el.resetBtn.addEventListener("click", resetChat);
-        el.sendBtn.addEventListener("click", sendMessage);
-        el.micBtn.addEventListener("click", toggleVoiceRecognition);
-        el.stopVoiceBtn.addEventListener("click", stopSpeaking);
-        el.message.addEventListener("keydown", function (e) {
-          if (e.key === "Enter") sendMessage();
+      input.value = "";
+      button.disabled = true;
+      button.textContent = "Envoi...";
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            telephone: telephone,
+            text: text
+          })
         });
+
+        const data = await response.json();
+        const reply = data.reply || "Aucune réponse reçue.";
+
+        addMessage(reply, "assistant");
+        speakText(reply);
+
+        const debug = document.getElementById("debug");
+        debug.style.display = "block";
+        debug.textContent = JSON.stringify(data, null, 2);
+
+      } catch (error) {
+        addMessage("Erreur : impossible de contacter l’automatisation.", "assistant");
+        showDebug(String(error));
+        console.error(error);
       }
 
-      function initPage() {
-        el.telephone = $("telephone");
-        el.message = $("message");
-        el.sendBtn = $("sendBtn");
-        el.micBtn = $("micBtn");
-        el.resetBtn = $("resetBtn");
-        el.stopVoiceBtn = $("stopVoiceBtn");
-        el.voiceEnabled = $("voiceEnabled");
-        el.chat = $("chat");
-        el.debug = $("debug");
-        el.status = $("status");
+      button.disabled = false;
+      button.textContent = "Envoyer";
+    }
 
-        bindEvents();
-        setStatus("Page prête. Les boutons sont initialisés.", false);
+    function setupSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        if ("speechSynthesis" in window) {
-          window.speechSynthesis.onvoiceschanged = loadVoices;
-          loadVoices();
-          setTimeout(loadVoices, 500);
-          setTimeout(loadVoices, 1500);
+      if (!SpeechRecognition) {
+        document.getElementById("micBtn").disabled = true;
+        addMessage("Reconnaissance vocale non supportée sur ce navigateur. Testez Chrome mobile.", "system");
+        return;
+      }
+
+      recognition = new SpeechRecognition();
+      recognition.lang = "fr-FR";
+      recognition.interimResults = false;
+      recognition.continuous = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        isListening = true;
+        document.getElementById("micBtn").textContent = "🎙️ J’écoute...";
+        document.getElementById("micBtn").disabled = true;
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
         }
+
+        transcript = transcript.trim();
+        document.getElementById("message").value = transcript;
+
+        if (transcript) {
+          setTimeout(() => {
+            sendMessage(transcript);
+          }, 500);
+        } else {
+          addMessage("Je n’ai pas compris le message vocal.", "system");
+        }
+      };
+
+      recognition.onerror = (event) => {
+        let message = "Erreur micro : " + event.error;
+
+        if (event.error === "not-allowed") {
+          message = "Micro refusé. Autorisez le micro dans les réglages du navigateur.";
+        } else if (event.error === "no-speech") {
+          message = "Aucune voix détectée. Réessayez en parlant après le clic.";
+        } else if (event.error === "network") {
+          message = "Erreur réseau pendant la reconnaissance vocale.";
+        }
+
+        addMessage(message, "system");
+        showDebug("SpeechRecognition error: " + event.error);
+      };
+
+      recognition.onend = () => {
+        isListening = false;
+        document.getElementById("micBtn").textContent = "🎙️ Parler";
+        document.getElementById("micBtn").disabled = false;
+      };
+    }
+
+    function startListening() {
+      if (!recognition) {
+        addMessage("Reconnaissance vocale indisponible sur ce navigateur.", "system");
+        return;
       }
 
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", initPage);
-      } else {
-        initPage();
+      if (isListening) return;
+
+      try {
+        recognition.start();
+      } catch (error) {
+        showDebug("Erreur lancement micro : " + String(error));
       }
-    })();
+    }
+
+    function initPage() {
+      document.getElementById("chat").innerHTML = "";
+      addMessage("Page prête. Testez d’abord Envoyer, puis 🎙️ Parler. Pour entendre les réponses, touchez d’abord 🔊 Activer la voix.", "success");
+
+      document.getElementById("sendBtn").addEventListener("click", () => sendMessage());
+      document.getElementById("micBtn").addEventListener("click", startListening);
+      document.getElementById("resetBtn").addEventListener("click", resetChat);
+      document.getElementById("stopVoiceBtn").addEventListener("click", stopVoice);
+      document.getElementById("unlockVoiceBtn").addEventListener("click", unlockVoice);
+
+      document.getElementById("message").addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          sendMessage();
+        }
+      });
+
+      if ("speechSynthesis" in window) {
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+
+      setupSpeechRecognition();
+    }
+
+    window.addEventListener("DOMContentLoaded", initPage);
   </script>
 </body>
 </html>
