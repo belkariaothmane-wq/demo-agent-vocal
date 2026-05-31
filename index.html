@@ -248,6 +248,7 @@
     let isListening = false;
     let availableVoices = [];
     let voiceUnlocked = false;
+    let selectedVoiceName = "";
 
     function showDebug(text) {
       const debug = document.getElementById("debug");
@@ -284,11 +285,15 @@
 
       availableVoices = window.speechSynthesis.getVoices();
 
-      // Chrome mobile charge parfois les voix avec retard.
       if (!availableVoices.length) {
         setTimeout(() => {
           availableVoices = window.speechSynthesis.getVoices();
-        }, 500);
+          const preferredVoice = getPreferredFrenchVoice();
+          if (preferredVoice) selectedVoiceName = preferredVoice.name;
+        }, 800);
+      } else {
+        const preferredVoice = getPreferredFrenchVoice();
+        if (preferredVoice) selectedVoiceName = preferredVoice.name;
       }
     }
 
@@ -299,14 +304,35 @@
 
       const lower = voice => `${voice.name} ${voice.lang}`.toLowerCase();
 
+      // Priorité aux voix les moins robotisées quand elles existent.
       return (
         availableVoices.find(v => lower(v).includes("microsoft denise online") && lower(v).includes("fr")) ||
         availableVoices.find(v => lower(v).includes("denise") && lower(v).includes("fr")) ||
+        availableVoices.find(v => lower(v).includes("google") && lower(v).includes("fr")) ||
         availableVoices.find(v => lower(v).includes("natural") && lower(v).includes("fr")) ||
-        availableVoices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr-fr")) ||
+        availableVoices.find(v => lower(v).includes("online") && lower(v).includes("fr")) ||
+        availableVoices.find(v => v.lang && v.lang.toLowerCase() === "fr-fr") ||
         availableVoices.find(v => v.lang && v.lang.toLowerCase().startsWith("fr")) ||
         null
       );
+    }
+
+    function buildUtterance(text) {
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "fr-FR";
+
+      // Réglages plus naturels : un peu plus lent, moins aigu.
+      utterance.rate = 0.88;
+      utterance.pitch = 0.95;
+      utterance.volume = 1;
+
+      const preferredVoice = getPreferredFrenchVoice();
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+        selectedVoiceName = preferredVoice.name;
+      }
+
+      return utterance;
     }
 
     function unlockVoice() {
@@ -318,19 +344,14 @@
       loadVoices();
       window.speechSynthesis.cancel();
 
-      // Sur mobile, la synthèse vocale doit être déclenchée une première fois par un clic utilisateur.
-      const utterance = new SpeechSynthesisUtterance("Voix activée.");
-      utterance.lang = "fr-FR";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-
-      const preferredVoice = getPreferredFrenchVoice();
-      if (preferredVoice) utterance.voice = preferredVoice;
-
+      const utterance = buildUtterance("Voix activée.");
       utterance.onstart = () => {
         voiceUnlocked = true;
-        addMessage("Voix activée. Les prochaines réponses pourront être lues à voix haute.", "success");
+      };
+
+      utterance.onend = () => {
+        const voiceInfo = selectedVoiceName ? "Voix utilisée : " + selectedVoiceName : "Voix activée.";
+        addMessage(voiceInfo, "success");
       };
 
       utterance.onerror = (event) => {
@@ -352,7 +373,6 @@
         return;
       }
 
-      // Important mobile : sans activation manuelle, certains navigateurs bloquent speechSynthesis.
       if (!voiceUnlocked) {
         addMessage("Touchez d’abord “🔊 Activer la voix” pour autoriser la lecture vocale sur mobile.", "system");
         return;
@@ -361,20 +381,12 @@
       loadVoices();
       window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = "fr-FR";
-      utterance.rate = 1;
-      utterance.pitch = 1;
-      utterance.volume = 1;
-
-      const preferredVoice = getPreferredFrenchVoice();
-      if (preferredVoice) utterance.voice = preferredVoice;
+      const utterance = buildUtterance(text);
 
       utterance.onerror = (event) => {
         showDebug("Erreur lecture vocale : " + (event.error || "inconnue"));
       };
 
-      // Petit délai pour éviter certains blocages après fetch sur mobile.
       setTimeout(() => {
         window.speechSynthesis.speak(utterance);
       }, 200);
@@ -516,7 +528,7 @@
 
     function initPage() {
       document.getElementById("chat").innerHTML = "";
-      addMessage("Page prête. Testez d’abord Envoyer, puis 🎙️ Parler. Pour entendre les réponses, touchez d’abord 🔊 Activer la voix.", "success");
+      addMessage("Page prête. Touchez 🔊 Activer la voix, puis testez Envoyer ou 🎙️ Parler.", "success");
 
       document.getElementById("sendBtn").addEventListener("click", () => sendMessage());
       document.getElementById("micBtn").addEventListener("click", startListening);
