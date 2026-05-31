@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Démo Agent IA Électricien - Mobile Fix</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 30px;
+    }
+    .container {
+      max-width: 760px;
+      margin: auto;
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+    h1 { margin-top: 0; font-size: 24px; }
+    .subtitle { color: #666; font-size: 14px; margin-bottom: 16px; }
+    .phone-box { display: flex; gap: 10px; margin-bottom: 14px; }
+    .phone-box input { flex: 1; }
+    .chat {
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      padding: 16px;
+      height: 430px;
+      overflow-y: auto;
+      background: #fafafa;
+      margin-bottom: 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .message {
+      margin-bottom: 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      max-width: 80%;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .user { background: #dbeafe; margin-left: auto; text-align: right; }
+    .assistant { background: #e5e7eb; margin-right: auto; }
+    .system { background: #fff7ed; color: #9a3412; margin: 0 auto 12px auto; text-align: center; font-size: 13px; }
+    .controls { display: flex; gap: 10px; margin-bottom: 10px; }
+    .voice-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; font-size: 14px; color: #374151; }
+    .voice-controls label { display: flex; align-items: center; gap: 6px; }
+    input {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      min-height: 46px;
+    }
+    #message { flex: 1; }
+    button {
+      padding: 12px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #111827;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      min-height: 46px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    button.secondary { background: #6b7280; }
+    button.micro { background: #2563eb; }
+    button.micro.recording { background: #dc2626; }
+    button.stop { background: #b91c1c; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .debug {
+      margin-top: 14px;
+      font-size: 12px;
+      color: #555;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px;
+      display: none;
+      white-space: pre-wrap;
+      max-height: 180px;
+      overflow: auto;
+    }
+    .hint { font-size: 12px; color: #6b7280; margin-top: 6px; line-height: 1.4; }
+    .status { font-size: 12px; color: #047857; margin: 8px 0 10px 0; }
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .container { padding: 16px; border-radius: 12px; }
+      .phone-box, .controls, .voice-controls { flex-direction: column; align-items: stretch; }
+      .phone-box input, #message, button { width: 100%; }
+      .chat { height: 52vh; }
+      .message { max-width: 92%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Démo Agent IA Électricien</h1>
+    <div class="subtitle">Simulation d’une conversation client sans WhatsApp ni Twilio, avec texte et vocal navigateur.</div>
+
+    <div class="phone-box">
+      <input id="telephone" value="+33600000000" inputmode="tel" />
+      <button id="resetBtn" class="secondary" type="button">Nouvelle démo</button>
+    </div>
+
+    <div id="status" class="status">Chargement de la page...</div>
+
+    <div id="chat" class="chat">
+      <div class="message system">Écrivez un message ou cliquez sur 🎙️ Parler pour démarrer la démonstration.</div>
+    </div>
+
+    <div class="controls">
+      <input id="message" placeholder="Écrire un message client..." autocomplete="off" />
+      <button id="micBtn" class="micro" type="button">🎙️ Parler</button>
+      <button id="sendBtn" type="button">Envoyer</button>
+    </div>
+
+    <div class="voice-controls">
+      <label>
+        <input id="voiceEnabled" type="checkbox" checked />
+        Lire la réponse à voix haute
+      </label>
+      <button id="stopVoiceBtn" class="stop" type="button">Stop voix</button>
+    </div>
+
+    <div class="hint">
+      Mobile : ouvrez cette page dans Chrome ou Safari directement. Évitez l’aperçu fichier, WhatsApp, Messenger ou Gmail intégré. Si besoin, publiez la page en HTTPS.
+    </div>
+
+    <div id="debug" class="debug"></div>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      var WEBHOOK_URL = "https://othmanebelkaria.app.n8n.cloud/webhook/demo-chat";
+      var DEFAULT_VOICE_NAME = "Microsoft Denise Online (Natural) - French (France)";
+
+      var recognition = null;
+      var isRecording = false;
+      var availableVoices = [];
+      var lastVoiceText = "";
+      var autoSendAfterVoice = false;
+
+      var el = {};
+
+      function $(id) {
+        return document.getElementById(id);
+      }
+
+      function setStatus(text, isError) {
+        if (!el.status) return;
+        el.status.textContent = text;
+        el.status.style.color = isError ? "#b91c1c" : "#047857";
+      }
+
+      function showDebug(obj) {
+        if (!el.debug) return;
+        el.debug.style.display = "block";
+        if (typeof obj === "string") {
+          el.debug.textContent = obj;
+        } else {
+          el.debug.textContent = JSON.stringify(obj, null, 2);
+        }
+      }
+
+      function addMessage(text, type) {
+        var div = document.createElement("div");
+        div.className = "message " + type;
+        div.textContent = text;
+        el.chat.appendChild(div);
+        el.chat.scrollTop = el.chat.scrollHeight;
+      }
+
+      function normalizePhone(phone) {
+        return String(phone || "").replace("whatsapp:", "").trim();
+      }
+
+      function resetChat() {
+        stopSpeaking();
+        stopVoiceRecognition();
+        el.chat.innerHTML = '<div class="message system">Nouvelle simulation démarrée. Changez le numéro si vous voulez repartir d’une conversation vierge.</div>';
+        el.debug.style.display = "none";
+        el.debug.textContent = "";
+        el.message.value = "";
+        setStatus("Page prête.", false);
+      }
+
+      async function sendMessage() {
+        var text = el.message.value.trim();
+        var telephone = normalizePhone(el.telephone.value);
+
+        if (!text) {
+          setStatus("Écrivez un message avant d’envoyer.", true);
+          return;
+        }
+
+        stopSpeaking();
+        addMessage(text, "user");
+        el.message.value = "";
+        el.sendBtn.disabled = true;
+        el.micBtn.disabled = true;
+        el.sendBtn.textContent = "Envoi...";
+        setStatus("Envoi du message vers n8n...", false);
+
+        try {
+          var response = await fetch(WEBHOOK_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ telephone: telephone, text: text })
+          });
+
+          var responseText = await response.text();
+          var data = {};
+
+          try {
+            data = JSON.parse(responseText);
+          } catch (jsonError) {
+            throw new Error("Réponse n8n non JSON : " + responseText);
+          }
+
+          var reply = data.reply || "Aucune réponse reçue.";
+          addMessage(reply, "assistant");
+          speakText(reply);
+          showDebug(data);
+          setStatus("Réponse reçue.", false);
+        } catch (error) {
+          addMessage("Erreur : impossible de contacter l’automatisation.", "assistant");
+          setStatus("Erreur d’envoi. Voir debug.", true);
+          showDebug(String(error && error.message ? error.message : error));
+          console.error(error);
+        } finally {
+          el.sendBtn.disabled = false;
+          el.micBtn.disabled = false;
+          el.sendBtn.textContent = "Envoyer";
+        }
+      }
+
+      function initVoiceRecognition() {
+        var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (!SpeechRecognition) {
+          addMessage("Reconnaissance vocale non supportée par ce navigateur. Sur iPhone, Safari ne supporte pas toujours cette API. Utilisez le clavier vocal du téléphone ou Chrome Android.", "system");
+          setStatus("Reconnaissance vocale non supportée ici.", true);
+          return null;
+        }
+
+        var rec = new SpeechRecognition();
+        rec.lang = "fr-FR";
+        rec.continuous = false;
+        rec.interimResults = true;
+        rec.maxAlternatives = 1;
+
+        rec.onstart = function () {
+          isRecording = true;
+          autoSendAfterVoice = true;
+          lastVoiceText = "";
+          el.message.value = "";
+          el.micBtn.textContent = "⏺️ Écoute...";
+          el.micBtn.classList.add("recording");
+          setStatus("Micro activé, parlez maintenant...", false);
+        };
+
+        rec.onresult = function (event) {
+          var transcript = "";
+          for (var i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript + " ";
+          }
+          transcript = transcript.trim();
+          if (transcript) {
+            lastVoiceText = transcript;
+            el.message.value = transcript;
+          }
+        };
+
+        rec.onerror = function (event) {
+          var message = "Erreur micro : " + event.error;
+          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+            message = "Micro refusé ou bloqué. Autorisez le micro dans les réglages du navigateur.";
+          } else if (event.error === "no-speech") {
+            message = "Aucune voix détectée. Réessayez en parlant plus près du micro.";
+          } else if (event.error === "audio-capture") {
+            message = "Aucun micro détecté. Vérifiez votre micro ou votre casque.";
+          } else if (event.error === "network") {
+            message = "Erreur réseau pendant la reconnaissance vocale. Testez avec une page HTTPS.";
+          }
+
+          autoSendAfterVoice = false;
+          addMessage(message, "system");
+          setStatus(message, true);
+          showDebug(event.error || event);
+        };
+
+        rec.onend = function () {
+          isRecording = false;
+          el.micBtn.textContent = "🎙️ Parler";
+          el.micBtn.classList.remove("recording");
+
+          setTimeout(function () {
+            var text = (el.message.value.trim() || lastVoiceText.trim());
+            if (text) el.message.value = text;
+
+            if (autoSendAfterVoice && text) {
+              autoSendAfterVoice = false;
+              sendMessage();
+            } else if (autoSendAfterVoice && !text) {
+              autoSendAfterVoice = false;
+              addMessage("Je n’ai pas récupéré de texte vocal. Réessayez ou écrivez le message manuellement.", "system");
+              setStatus("Aucun texte vocal récupéré.", true);
+            }
+          }, 700);
+        };
+
+        return rec;
+      }
+
+      function toggleVoiceRecognition() {
+        if (isRecording) {
+          stopVoiceRecognition();
+          return;
+        }
+
+        stopSpeaking();
+        recognition = initVoiceRecognition();
+        if (!recognition) return;
+
+        try {
+          recognition.start();
+        } catch (error) {
+          addMessage("Impossible de démarrer le micro. Réessayez dans quelques secondes.", "system");
+          setStatus("Impossible de démarrer le micro.", true);
+          showDebug(String(error && error.message ? error.message : error));
+          console.error(error);
+        }
+      }
+
+      function stopVoiceRecognition() {
+        autoSendAfterVoice = false;
+        if (recognition && isRecording) {
+          try { recognition.stop(); } catch (error) { console.error(error); }
+        }
+        isRecording = false;
+        if (el.micBtn) {
+          el.micBtn.textContent = "🎙️ Parler";
+          el.micBtn.classList.remove("recording");
+        }
+      }
+
+      function loadVoices() {
+        if (!("speechSynthesis" in window)) return;
+        availableVoices = window.speechSynthesis.getVoices();
+      }
+
+      function getDefaultVoice() {
+        if (!availableVoices || availableVoices.length === 0) loadVoices();
+
+        var selectedVoice = null;
+        for (var i = 0; i < availableVoices.length; i++) {
+          if (availableVoices[i].name === DEFAULT_VOICE_NAME) selectedVoice = availableVoices[i];
+        }
+
+        if (!selectedVoice) {
+          for (var j = 0; j < availableVoices.length; j++) {
+            var v = availableVoices[j];
+            if (v.name && v.name.toLowerCase().indexOf("denise") !== -1 && v.lang && v.lang.toLowerCase().indexOf("fr") === 0) {
+              selectedVoice = v;
+              break;
+            }
+          }
+        }
+
+        if (!selectedVoice) {
+          for (var k = 0; k < availableVoices.length; k++) {
+            var vf = availableVoices[k];
+            if (vf.lang && vf.lang.toLowerCase().indexOf("fr") === 0) {
+              selectedVoice = vf;
+              break;
+            }
+          }
+        }
+
+        return selectedVoice;
+      }
+
+      function speakText(text) {
+        if (!el.voiceEnabled || !el.voiceEnabled.checked) return;
+        if (!("speechSynthesis" in window)) return;
+
+        stopSpeaking();
+        var utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = "fr-FR";
+        utterance.rate = 1;
+        utterance.pitch = 1;
+        utterance.volume = 1;
+
+        var selectedVoice = getDefaultVoice();
+        if (selectedVoice) {
+          utterance.voice = selectedVoice;
+          utterance.lang = selectedVoice.lang || "fr-FR";
+        }
+
+        window.speechSynthesis.speak(utterance);
+      }
+
+      function stopSpeaking() {
+        if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+      }
+
+      function bindEvents() {
+        el.resetBtn.addEventListener("click", resetChat);
+        el.sendBtn.addEventListener("click", sendMessage);
+        el.micBtn.addEventListener("click", toggleVoiceRecognition);
+        el.stopVoiceBtn.addEventListener("click", stopSpeaking);
+        el.message.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") sendMessage();
+        });
+      }
+
+      function initPage() {
+        el.telephone = $("telephone");
+        el.message = $("message");
+        el.sendBtn = $("sendBtn");
+        el.micBtn = $("micBtn");
+        el.resetBtn = $("resetBtn");
+        el.stopVoiceBtn = $("stopVoiceBtn");
+        el.voiceEnabled = $("voiceEnabled");
+        el.chat = $("chat");
+        el.debug = $("debug");
+        el.status = $("status");
+
+        bindEvents();
+        setStatus("Page prête. Les boutons sont initialisés.", false);
+
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.onvoiceschanged = loadVoices;
+          loadVoices();
+          setTimeout(loadVoices, 500);
+          setTimeout(loadVoices, 1500);
+        }
+      }
+
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initPage);
+      } else {
+        initPage();
+      }
+    })();
+  </script>
+</body>
+</html>
